@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum ProductKind {
+  TICKET
+  DIGITAL_COLLECTIBLE
+  MEMBERSHIP
+}
+
+enum ChainNetwork {
+  DEVNET
+  TESTNET
+  MAINNET
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_SUBMITTED
+  PAID
+  FULFILLED
+  FAILED
+  REFUNDED
+  VOIDED
+}
+
+enum PaymentIntentStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMING
+  CONFIRMED
+  FAILED
+  EXPIRED
+}
+
+enum TicketStatus {
+  ACTIVE
+  CHECKED_IN
+  VOIDED
+  REFUNDED
+}
+
+enum SporeMintStatus {
+  PENDING
+  MINTED
+  SIMULATED
+  FAILED
+}
+
+model Merchant {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  settlementAddress String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  events   Event[]
+  products Product[]
+  orders   Order[]
+}
+
+model Buyer {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  displayName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders       Order[]
+  walletLinks  WalletLink[]
+  entitlements TicketEntitlement[]
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  merchantId String
+  slug       String   @unique
+  title      String
+  venue      String
+  startsAt   DateTime
+  endsAt     DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  merchant     Merchant            @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  products     Product[]
+  ticketTiers  TicketTier[]
+  entitlements TicketEntitlement[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  merchantId  String
+  eventId     String?
+  slug        String      @unique
+  title       String
+  description String
+  kind        ProductKind
+  unitPrice   String
+  inventory   Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  merchant  Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  event     Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  ticketTier TicketTier?
+  orders    Order[]
+}
+
+model TicketTier {
+  id        String   @id @default(cuid())
+  eventId   String
+  productId String   @unique
+  name      String
+  supply    Int
+  sold      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event        Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  product      Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  entitlements TicketEntitlement[]
+}
+
+model SupportedPaymentToken {
+  id              String       @id @default(cuid())
+  symbol          String
+  network         ChainNetwork
+  decimals        Int
+  xudtArgs        String
+  issuerAddress   String
+  receiverAddress String
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  paymentIntents PaymentIntent[]
+
+  @@unique([network, xudtArgs])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  reference       String      @unique
+  merchantId      String
+  buyerId         String
+  productId       String
+  tierId          String?
+  quantity        Int
+  unitPrice       String
+  totalAmount     String
+  paymentAmount   String
+  receiverAddress String
+  payerAddress    String?
+  network         ChainNetwork
+  status          OrderStatus @default(PENDING_PAYMENT)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  merchant     Merchant           @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  buyer        Buyer              @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  product      Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  tier         TicketTier?        @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  paymentIntent PaymentIntent?
+  entitlement  TicketEntitlement?
+  sporeAsset   SporeAsset?
+}
+
+model PaymentIntent {
+  id                    String              @id @default(cuid())
+  orderId               String              @unique
+  supportedPaymentTokenId String
+  expectedAmount        String
+  xudtArgs              String
+  receiverAddress       String
+  confirmationsRequired Int
+  status                PaymentIntentStatus @default(PENDING)
+  payerAddress          String?
+  submittedTxHash       String?
+  confirmedTxHash       String?
+  submittedAt           DateTime?
+  confirmedAt           DateTime?
+  lastCheckedAt         DateTime?
+  expiresAt             DateTime
+  failureReason         String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  order  Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  token  SupportedPaymentToken @relation(fields: [supportedPaymentTokenId], references: [id], onDelete: Restrict)
+}
+
+model WalletLink {
+  id         String       @id @default(cuid())
+  buyerId     String
+  address     String
+  network     ChainNetwork
+  verifiedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  buyer Buyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@unique([network, address])
+}
+
+model TicketEntitlement {
+  id                String       @id @default(cuid())
+  orderId           String       @unique
+  buyerId           String
+  eventId           String
+  tierId            String
+  accessCode        String       @unique
+  qrPayload         String
+  chainOwnerAddress String
+  status            TicketStatus @default(ACTIVE)
+  checkedInAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  order Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyer Buyer     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  event Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier  TicketTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+}
+
+model SporeAsset {
+  id           String          @id @default(cuid())
+  orderId      String          @unique
+  ownerAddress String
+  mintStatus   SporeMintStatus @default(PENDING)
+  mintTxHash   String?
+  outputIndex  Int?
+  sporeId      String?
+  contentType  String
+  contentJson  String
+  failureReason String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
