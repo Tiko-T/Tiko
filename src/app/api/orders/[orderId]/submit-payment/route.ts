@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import { fail, ok } from "@/lib/api/responses";
+import { requireApiUser } from "@/lib/auth/api-guards";
+import { canAccessOrder } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
@@ -14,20 +16,38 @@ export async function POST(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
+    const currentUser = await requireApiUser();
     const { orderId } = await params;
     const payload = submitPaymentSchema.parse(await request.json());
-    const [{ registerPaymentSubmission, submitAndReconcilePayment }, { toOrderView }] =
+    const [
+      { registerPaymentSubmission },
+      { enqueuePaymentReconciliation, processPendingJobs },
+      { getOrderOrThrow },
+      { toOrderView },
+    ] =
       await Promise.all([
         import("@/lib/tiko/payments"),
+        import("@/lib/tiko/jobs"),
+        import("@/lib/tiko/orders"),
         import("@/lib/frontend/server-data"),
       ]);
 
-    if (payload.reconcile === false) {
-      const order = await registerPaymentSubmission(orderId, payload.txHash);
-      return ok(toOrderView(order));
+    const existingOrder = await getOrderOrThrow(orderId);
+
+    if (!canAccessOrder(currentUser, existingOrder.buyer.email)) {
+      throw new Error(`Order ${orderId} was not found`);
     }
 
-    const order = await submitAndReconcilePayment(orderId, payload.txHash);
+    const order = await registerPaymentSubmission(orderId, payload.txHash);
+
+    if (payload.reconcile !== false) {
+      await enqueuePaymentReconciliation(orderId);
+
+      if (process.env.NODE_ENV === "development") {
+        await processPendingJobs(2);
+      }
+    }
+
     return ok(toOrderView(order));
   } catch (error) {
     return fail(error);

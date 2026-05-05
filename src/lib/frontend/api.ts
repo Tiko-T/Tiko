@@ -30,12 +30,17 @@ async function requestData<T>(
   schema: { parse: (payload: unknown) => T },
   init?: RequestInit
 ) {
+  const hasFormDataBody =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
+
   const response = await fetch(input, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers: hasFormDataBody
+      ? init?.headers
+      : {
+          "Content-Type": "application/json",
+          ...(init?.headers ?? {}),
+        },
   });
   const payload = await response.json();
 
@@ -64,15 +69,34 @@ export const tikoApi = {
     venue: string;
     startsAtIso: string;
     endsAtIso: string;
+    pricingMode: "paid" | "free";
+    eventImageFile?: File | null;
     ticketTitle: string;
     ticketTierName: string;
     description: string;
-    ticketPrice: string;
+    ticketPrice?: string;
     capacity: number;
   }) {
+    const body = new FormData();
+    body.set("organizerName", payload.organizerName);
+    body.set("eventTitle", payload.eventTitle);
+    body.set("venue", payload.venue);
+    body.set("startsAtIso", payload.startsAtIso);
+    body.set("endsAtIso", payload.endsAtIso);
+    body.set("pricingMode", payload.pricingMode);
+    body.set("ticketTitle", payload.ticketTitle);
+    body.set("ticketTierName", payload.ticketTierName);
+    body.set("description", payload.description);
+    body.set("ticketPrice", payload.ticketPrice ?? "");
+    body.set("capacity", String(payload.capacity));
+
+    if (payload.eventImageFile) {
+      body.set("eventImage", payload.eventImageFile);
+    }
+
     return requestData("/api/listings", catalogProductViewSchema, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body,
     }) as Promise<CatalogProductView>;
   },
   createCheckoutOrder(payload: {

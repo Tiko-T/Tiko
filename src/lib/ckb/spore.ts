@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 
 import systemScripts from "./system-scripts.json";
 import { cccClient } from "./ccc-client";
-import { getWalletSet } from "./wallets";
+import { getSporeMinterAccount } from "./wallets";
 
 function getDevnetSporeScriptInfo(): SporeScriptInfoLike {
   const script = systemScripts.devnet.spore.script;
@@ -30,11 +30,10 @@ export async function mintTicketSpore(params: {
   contentType?: string;
 }) {
   const { ownerAddress, contentJson, contentType = "application/json" } = params;
-  const wallets = await getWalletSet();
-  const signer = new ccc.SignerCkbPrivateKey(cccClient, wallets.sporeMinter.privateKey);
+  const sporeMinter = await getSporeMinterAccount();
+  const signer = new ccc.SignerCkbPrivateKey(cccClient, sporeMinter.privateKey);
   const ownerLockScript = (await ccc.Address.fromString(ownerAddress, cccClient)).script;
-  const scriptInfo =
-    env.CKB_NETWORK === "devnet" ? getDevnetSporeScriptInfo() : undefined;
+  const scriptInfo = env.CKB_NETWORK === "devnet" ? getDevnetSporeScriptInfo() : undefined;
 
   let lastError: unknown;
 

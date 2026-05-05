@@ -1,68 +1,116 @@
 import Link from "next/link";
-import { ArrowUpRight, MapPin, Search } from "lucide-react";
 
-import { buttonClasses } from "@/components/common/button";
+import { LogoutButton } from "@/components/auth/logout-button";
+import { getCurrentUser, isAdminUser, isStaffUser } from "@/lib/auth/session";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const currentUser = await getCurrentUser();
+  const showStaffLinks = isStaffUser(currentUser);
+  const showAdminLink = isAdminUser(currentUser);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-[color:var(--line)] bg-[color:rgba(248,239,230,0.96)]">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-        <Link href="/" className="group flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-[1.2rem] bg-[linear-gradient(145deg,var(--accent-soft),#fff1ed)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-            <span className="font-mono text-sm font-semibold uppercase tracking-[0.24em] text-[color:var(--accent-strong)]">
-              TI
-            </span>
-          </div>
-          <div>
-            <p className="font-[family:var(--font-display)] text-[1.9rem] leading-none text-[color:var(--ink)]">
-              Tiko
-            </p>
-            <p className="eyebrow text-[color:var(--muted)]">Buy tickets. Run events.</p>
-          </div>
-        </Link>
+    <header className="sticky top-0 z-40 px-4 pt-3 sm:px-6 sm:pt-4">
+      <div className="mx-auto max-w-7xl">
+        <div className="overflow-hidden rounded-[2rem] border border-[color:rgba(32,16,13,0.12)] bg-[color:rgba(255,250,246,0.8)] backdrop-blur-xl shadow-[0_22px_52px_rgba(39,18,15,0.12),inset_0_1px_0_rgba(255,255,255,0.74)]">
+          <div className="flex items-center gap-4 px-4 py-3 sm:px-5 sm:py-4">
+            <Link href="/" className="group flex min-w-0 items-center gap-3">
+              <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1.4rem] bg-[linear-gradient(145deg,var(--accent-soft),#fff1ed_48%,#f4ddd0)] shadow-[0_14px_28px_rgba(169,43,31,0.14),inset_0_1px_0_rgba(255,255,255,0.88)]">
+                <div className="absolute inset-[5px] rounded-[1rem] border border-white/60" />
+                <div className="absolute inset-x-0 top-0 h-5 bg-[linear-gradient(180deg,rgba(255,255,255,0.42),transparent)]" />
+                <span className="relative font-mono text-sm font-semibold uppercase tracking-[0.24em] text-[color:var(--accent-strong)]">
+                  TI
+                </span>
+              </div>
 
-        <nav className="hidden items-center gap-6 text-sm text-[color:var(--muted)] md:flex">
-          <Link href="/#lineup" className="transition hover:text-[color:var(--ink)]">
-            Events
-          </Link>
-          <Link href="/sell" className="transition hover:text-[color:var(--ink)]">
-            List an event
-          </Link>
-          <Link href="/#flow" className="transition hover:text-[color:var(--ink)]">
-            How it works
-          </Link>
-          <Link href="/operator" className="transition hover:text-[color:var(--ink)]">
-            For event teams
-          </Link>
-        </nav>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="truncate font-[family:var(--font-display)] text-[1.85rem] leading-none text-[color:var(--ink)]">
+                    Tiko
+                  </p>
+                  <span className="hidden rounded-full border border-[color:rgba(169,43,31,0.12)] bg-[color:rgba(207,79,64,0.1)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-strong)] sm:inline-flex">
+                    Live
+                  </span>
+                </div>
+                <p className="truncate text-[11px] font-medium uppercase tracking-[0.22em] text-[color:var(--muted)]">
+                  Events. Booking. Entry.
+                </p>
+              </div>
+            </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden items-center gap-2 rounded-[1rem] border border-[color:var(--line)] bg-[color:var(--panel)] px-3 py-2 text-sm text-[color:var(--muted)] lg:flex">
-            <MapPin className="h-4 w-4 text-[color:var(--utility)]" />
-            <span>Concerts, summits, workshops</span>
+            <div className="hidden min-w-0 flex-1 justify-center lg:flex">
+              <nav className="inline-flex items-center gap-1 rounded-[1.3rem] border border-[color:rgba(32,16,13,0.1)] bg-[color:rgba(255,255,255,0.5)] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.66)]">
+                <HeaderLink href="/#lineup" label="Events" />
+                <HeaderLink href="/#flow" label="Guide" />
+                {showStaffLinks ? <HeaderLink href="/sell" label="Host" /> : null}
+                {showStaffLinks ? <HeaderLink href="/operator" label="Check-in" /> : null}
+                {showAdminLink ? <HeaderLink href="/admin" label="Admin" /> : null}
+              </nav>
+            </div>
+
+            <div className="ml-auto hidden items-center gap-3 xl:flex">
+              {currentUser ? (
+                <>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-[color:var(--ink)]">
+                      {currentUser.displayName ?? currentUser.email}
+                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--muted)]">
+                      {currentUser.role.toLowerCase()}
+                    </p>
+                  </div>
+                  <LogoutButton className="inline-flex items-center gap-2 rounded-[0.95rem] px-3.5 py-2 text-sm font-medium text-[color:var(--muted)] transition hover:bg-[color:rgba(32,16,13,0.06)] hover:text-[color:var(--ink)]" />
+                </>
+              ) : (
+                <HeaderLink href="/login" label="Sign in" />
+              )}
+            </div>
           </div>
-          <Link
-            href="/sell"
-            className={buttonClasses({
-              variant: "secondary",
-              size: "sm",
-            })}
-          >
-            <Search className="h-4 w-4" />
-            List an event
-          </Link>
-          <Link
-            href="/operator"
-            className={buttonClasses({
-              variant: "primary",
-              size: "sm",
-            })}
-          >
-            Run check-in
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
+
+          <div className="border-t border-[color:rgba(32,16,13,0.08)] px-2 py-2 lg:hidden">
+            <nav className="flex flex-wrap gap-1">
+              <MobileHeaderLink href="/#lineup" label="Events" />
+              <MobileHeaderLink href="/#flow" label="Guide" />
+              {showStaffLinks ? <MobileHeaderLink href="/sell" label="Host" /> : null}
+              {showStaffLinks ? (
+                <MobileHeaderLink href="/operator" label="Check-in" />
+              ) : null}
+              {showAdminLink ? <MobileHeaderLink href="/admin" label="Admin" /> : null}
+              {currentUser ? (
+                <div className="flex flex-1 items-center justify-end px-2">
+                  <LogoutButton
+                    compact
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] px-3 py-2.5 text-sm font-medium text-[color:var(--muted)] transition hover:bg-[color:rgba(32,16,13,0.06)] hover:text-[color:var(--ink)]"
+                  />
+                </div>
+              ) : (
+                <MobileHeaderLink href="/login" label="Sign in" />
+              )}
+            </nav>
+          </div>
         </div>
       </div>
     </header>
+  );
+}
+
+function HeaderLink(props: { href: string; label: string }) {
+  return (
+    <Link
+      href={props.href}
+      className="rounded-[0.95rem] px-3.5 py-2 text-sm font-medium text-[color:var(--muted)] transition hover:bg-[color:rgba(32,16,13,0.06)] hover:text-[color:var(--ink)]"
+    >
+      {props.label}
+    </Link>
+  );
+}
+
+function MobileHeaderLink(props: { href: string; label: string }) {
+  return (
+    <Link
+      href={props.href}
+      className="flex items-center justify-center rounded-[0.95rem] px-3 py-2.5 text-sm font-medium text-[color:var(--muted)] transition hover:bg-[color:rgba(32,16,13,0.06)] hover:text-[color:var(--ink)]"
+    >
+      {props.label}
+    </Link>
   );
 }

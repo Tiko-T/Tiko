@@ -6,13 +6,19 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react";
 
 import { buttonClasses } from "@/components/common/button";
+import type { AuthenticatedUser } from "@/lib/auth/session";
 import type { CatalogProductView } from "@/lib/frontend/contracts";
 import { tikoApi } from "@/lib/frontend/api";
 
-export function CheckoutForm(props: { product: CatalogProductView }) {
+export function CheckoutForm(props: {
+  product: CatalogProductView;
+  currentUser: AuthenticatedUser;
+}) {
   const router = useRouter();
-  const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerDisplayName, setBuyerDisplayName] = useState("");
+  const [buyerEmail] = useState(props.currentUser.email);
+  const [buyerDisplayName, setBuyerDisplayName] = useState(
+    props.currentUser.displayName ?? ""
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,13 +52,12 @@ export function CheckoutForm(props: { product: CatalogProductView }) {
       className="section-card rounded-[2.25rem] p-6 sm:p-8"
     >
       <div className="mb-6 space-y-3">
-        <p className="eyebrow text-[color:var(--accent-strong)]">Buyer details</p>
+        <p className="eyebrow text-[color:var(--accent-strong)]">Booking details</p>
         <h2 className="font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)]">
-          Reserve this ticket before you pay.
+          Enter your details.
         </h2>
         <p className="max-w-xl text-sm leading-7 text-[color:var(--muted)]">
-          Enter the email where you want updates for this order. Once the order is
-          created, you will continue to the payment instructions.
+          Add the details for this booking.
         </p>
       </div>
 
@@ -63,19 +68,16 @@ export function CheckoutForm(props: { product: CatalogProductView }) {
             type="email"
             required
             value={buyerEmail}
-            onChange={(event) => setBuyerEmail(event.target.value)}
+            readOnly
             className="h-12 w-full rounded-[1rem] border border-[color:var(--line-strong)] bg-[color:var(--panel-input)] px-4 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent-strong)]"
-            placeholder="you@example.com"
           />
           <p className="text-sm text-[color:var(--muted)]">
-            Used for the order record and ticket delivery updates.
+            Your invited beta account is used for booking and ticket updates.
           </p>
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[color:var(--ink)]">
-            Display name
-          </span>
+          <span className="text-sm font-medium text-[color:var(--ink)]">Name</span>
           <input
             type="text"
             value={buyerDisplayName}
@@ -84,24 +86,9 @@ export function CheckoutForm(props: { product: CatalogProductView }) {
             placeholder="Optional"
           />
           <p className="text-sm text-[color:var(--muted)]">
-            Helpful for operator lookup and guest-facing confirmation screens.
+            Optional. Add the name you want tied to this ticket.
           </p>
         </label>
-      </div>
-
-      <div className="mt-6 rounded-[1.7rem] border border-[color:var(--line)] bg-[linear-gradient(180deg,var(--panel),var(--panel-contrast))] p-5 text-sm text-[color:var(--muted)]">
-        <p className="font-medium text-[color:var(--ink)]">What happens next</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <StepHint step="01" body="Tiko creates the order and locks the exact amount." />
-          <StepHint
-            step="02"
-            body="Pay from a supported CKB wallet using the provided receiver address."
-          />
-          <StepHint
-            step="03"
-            body="The QR credential and collectible proof unlock after confirmation."
-          />
-        </div>
       </div>
 
       {error ? (
@@ -133,25 +120,16 @@ export function CheckoutForm(props: { product: CatalogProductView }) {
           {isSubmitting ? (
             <>
               <LoaderCircle className="h-5 w-5 animate-spin" />
-              Creating order…
+              Continuing…
             </>
           ) : (
             <>
-              Continue to payment setup
+              Continue
               <ArrowRight className="h-5 w-5" />
             </>
           )}
         </button>
       </div>
     </form>
-  );
-}
-
-function StepHint(props: { step: string; body: string }) {
-  return (
-    <div className="rounded-[1.1rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-3">
-      <p className="eyebrow text-[color:var(--muted)]">{props.step}</p>
-      <p className="mt-2 leading-6">{props.body}</p>
-    </div>
   );
 }

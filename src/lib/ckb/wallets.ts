@@ -42,22 +42,49 @@ async function buildAccount(privateKey: string): Promise<ChainAccount> {
   };
 }
 
+async function getIssuerAccount() {
+  const privateKey = requirePrivateKey(
+    env.CKB_ISSUER_PRIVATE_KEY,
+    "CKB_ISSUER_PRIVATE_KEY"
+  );
+
+  return buildAccount(privateKey);
+}
+
+async function getMerchantAccount() {
+  const privateKey = requirePrivateKey(
+    env.CKB_MERCHANT_PRIVATE_KEY,
+    "CKB_MERCHANT_PRIVATE_KEY"
+  );
+
+  return buildAccount(privateKey);
+}
+
+async function getBuyerTestAccount() {
+  const privateKey = requirePrivateKey(
+    env.CKB_TEST_BUYER_PRIVATE_KEY,
+    "CKB_TEST_BUYER_PRIVATE_KEY"
+  );
+
+  return buildAccount(privateKey);
+}
+
+export async function getSporeMinterAccount() {
+  const privateKey = requirePrivateKey(
+    env.CKB_SPORE_MINTER_PRIVATE_KEY,
+    "CKB_SPORE_MINTER_PRIVATE_KEY"
+  );
+
+  return buildAccount(privateKey);
+}
+
 export async function getWalletSet(): Promise<WalletSet> {
   if (!walletSetPromise) {
     walletSetPromise = Promise.all([
-      buildAccount(requirePrivateKey(env.CKB_ISSUER_PRIVATE_KEY, "CKB_ISSUER_PRIVATE_KEY")),
-      buildAccount(
-        requirePrivateKey(env.CKB_MERCHANT_PRIVATE_KEY, "CKB_MERCHANT_PRIVATE_KEY")
-      ),
-      buildAccount(
-        requirePrivateKey(env.CKB_TEST_BUYER_PRIVATE_KEY, "CKB_TEST_BUYER_PRIVATE_KEY")
-      ),
-      buildAccount(
-        requirePrivateKey(
-          env.CKB_SPORE_MINTER_PRIVATE_KEY,
-          "CKB_SPORE_MINTER_PRIVATE_KEY"
-        )
-      ),
+      getIssuerAccount(),
+      getMerchantAccount(),
+      getBuyerTestAccount(),
+      getSporeMinterAccount(),
     ]).then(([issuer, merchant, buyer, sporeMinter]) => ({
       issuer,
       merchant,
@@ -74,8 +101,7 @@ export async function resolveMerchantAddress() {
     return env.PAYMENT_RECEIVER_ADDRESS;
   }
 
-  const wallets = await getWalletSet();
-  return wallets.merchant.address;
+  return (await getMerchantAccount()).address;
 }
 
 export async function resolveXudtArgs() {
@@ -83,18 +109,17 @@ export async function resolveXudtArgs() {
     return env.CKB_XUDT_ARGS;
   }
 
-  const wallets = await getWalletSet();
-  return `${wallets.issuer.lockScript.hash()}00000000`;
+  return `${(await getIssuerAccount()).lockScript.hash()}00000000`;
 }
 
 export async function getActiveTokenConfig() {
-  const wallets = await getWalletSet();
+  const issuerAddress = env.CKB_ISSUER_ADDRESS ?? (await getIssuerAccount()).address;
 
   return {
     symbol: env.CKB_TOKEN_SYMBOL,
     decimals: env.CKB_TOKEN_DECIMALS,
     network: env.CKB_NETWORK,
-    issuerAddress: wallets.issuer.address,
+    issuerAddress,
     receiverAddress: await resolveMerchantAddress(),
     xudtArgs: await resolveXudtArgs(),
   };

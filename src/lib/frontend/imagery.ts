@@ -5,6 +5,12 @@ export type EventArtwork = {
   heroAlt: string;
   portraitAlt: string;
   squareAlt: string;
+  unoptimized?: boolean;
+};
+
+type EventArtworkInput = {
+  imageSrc?: string | null;
+  title?: string | null;
 };
 
 const defaultArtwork: EventArtwork = {
@@ -16,9 +22,23 @@ const defaultArtwork: EventArtwork = {
   squareAlt: "Square campaign artwork for Tiko Global Creator Summit 2026.",
 };
 
-export function getEventArtwork(slug?: string | null): EventArtwork {
-  if (slug === "global-access-pass" || slug === "global-creator-summit-2026") {
-    return defaultArtwork;
+export function getEventArtwork(input?: EventArtworkInput): EventArtwork {
+  if (input?.imageSrc) {
+    const title = input.title?.trim() || "Event";
+    const unoptimized =
+      !input.imageSrc.startsWith("/") ||
+      input.imageSrc.startsWith("/uploads/events/") ||
+      input.imageSrc.startsWith("/api/event-images/");
+
+    return {
+      heroSrc: input.imageSrc,
+      portraitSrc: input.imageSrc,
+      squareSrc: input.imageSrc,
+      heroAlt: `${title} event artwork.`,
+      portraitAlt: `${title} event poster.`,
+      squareAlt: `${title} event image.`,
+      unoptimized,
+    };
   }
 
   return defaultArtwork;

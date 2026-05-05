@@ -3,7 +3,6 @@ import { OrderStatus, PaymentIntentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { verifySubmittedPayment } from "@/lib/ckb/payments";
 
-import { fulfillPaidOrder } from "./fulfillment";
 import { getOrderOrThrow } from "./orders";
 
 export async function registerPaymentSubmission(orderId: string, txHash: string) {
@@ -11,6 +10,10 @@ export async function registerPaymentSubmission(orderId: string, txHash: string)
 
   if (!order.paymentIntent) {
     throw new Error(`Order ${order.reference} does not have a payment intent`);
+  }
+
+  if (order.paymentIntent.status === PaymentIntentStatus.CONFIRMED) {
+    return order;
   }
 
   await db.$transaction([
@@ -36,6 +39,18 @@ export async function registerPaymentSubmission(orderId: string, txHash: string)
 
 export async function reconcileSubmittedPayment(orderId: string) {
   const order = await getOrderOrThrow(orderId);
+
+  if (!order.paymentIntent) {
+    throw new Error(`Order ${order.reference} does not have a payment intent`);
+  }
+
+  if (order.status === OrderStatus.FULFILLED) {
+    return order;
+  }
+
+  if (order.paymentIntent.status === PaymentIntentStatus.CONFIRMED) {
+    return getOrderOrThrow(orderId);
+  }
 
   if (!order.paymentIntent?.submittedTxHash) {
     throw new Error(`Order ${order.reference} does not have a submitted transaction yet`);
@@ -98,7 +113,7 @@ export async function reconcileSubmittedPayment(orderId: string) {
     throw error;
   }
 
-  return fulfillPaidOrder(orderId);
+  return getOrderOrThrow(orderId);
 }
 
 export async function submitAndReconcilePayment(orderId: string, txHash: string) {

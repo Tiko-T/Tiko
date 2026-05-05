@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { fail, ok } from "@/lib/api/responses";
+import { requireApiStaffUser } from "@/lib/auth/api-guards";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,7 @@ const checkInSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    await requireApiStaffUser();
     const payload = checkInSchema.parse(await request.json());
     const [{ checkInTicket }, { toCheckInResultView }] = await Promise.all([
       import("@/lib/tiko/checkin"),

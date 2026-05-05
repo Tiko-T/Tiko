@@ -4,10 +4,12 @@ import { useRef, useState, useTransition } from "react";
 import { BrowserCodeReader, BrowserQRCodeReader } from "@zxing/browser";
 import {
   Camera,
+  CameraOff,
   CheckCircle2,
+  ClipboardCheck,
   LoaderCircle,
   ScanLine,
-  TicketSlash,
+  Ticket,
   TriangleAlert,
 } from "lucide-react";
 
@@ -22,7 +24,7 @@ export function OperatorConsole() {
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const [accessCode, setAccessCode] = useState("");
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [activeDeviceId, setActiveDeviceId] = useState<string>("");
+  const [activeDeviceId, setActiveDeviceId] = useState("");
   const [scannerMessage, setScannerMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckInResultView | null>(null);
@@ -45,9 +47,7 @@ export function OperatorConsole() {
       setError(null);
     } catch (submitError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Check-in request failed."
+        submitError instanceof Error ? submitError.message : "Check-in failed."
       );
       startSubmitting(() => {
         setResult(null);
@@ -58,7 +58,7 @@ export function OperatorConsole() {
   async function handleDecoded(value: string) {
     const nextCode = extractAccessCode(value);
     setAccessCode(nextCode);
-    setScannerMessage("QR captured. Submitting access code…");
+    setScannerMessage("Ticket scanned. Checking entry…");
     stopScanner();
     await submitAccessCode(nextCode);
   }
@@ -87,8 +87,9 @@ export function OperatorConsole() {
           }
         }
       );
+
       setActiveDeviceId(targetDeviceId);
-      setScannerMessage("Camera is live. Hold a ticket QR in frame.");
+      setScannerMessage("Camera is live. Hold the ticket QR inside the frame.");
       setIsScanning(true);
     } catch (scanError) {
       setScannerMessage(null);
@@ -106,7 +107,7 @@ export function OperatorConsole() {
     const nextCode = extractAccessCode(accessCode);
 
     if (!nextCode) {
-      setError("Enter or scan an access code first.");
+      setError("Enter or scan a ticket code first.");
       return;
     }
 
@@ -115,39 +116,61 @@ export function OperatorConsole() {
   }
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-      <section className="section-card space-y-6 rounded-[2.4rem] p-6 sm:p-8">
-        <div className="space-y-3">
-          <StatusBadge label="Operator console" tone="accent" />
-          <h2 className="font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)] sm:text-5xl">
-            Move guests through the door without second-guessing the ticket state.
-          </h2>
-          <p className="max-w-2xl text-sm leading-7 text-[color:var(--muted)]">
-            The operator checks the live Tiko credential first. Onchain ownership still
-            matters for provenance, but the venue should only care whether this pass is
-            valid right now.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <section className="section-card rounded-[2rem] p-6 sm:p-8">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-3">
+            <StatusBadge label="Operations" tone="accent" />
+            <div className="space-y-2">
+              <h1 className="font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)] sm:text-5xl">
+                Check in guests.
+              </h1>
+              <p className="max-w-2xl text-sm leading-7 text-[color:var(--muted)]">
+                Scan a ticket or paste a code to record entry.
+              </p>
+            </div>
+          </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <LaneCard
-            title="Live scanner"
-            body="Keep the camera open for the fast lane and fall back to manual code entry when needed."
-          />
-          <LaneCard
-            title="Manual fallback"
-            body="Paste any access code or QR payload and Tiko will extract the valid ticket identifier."
-          />
-          <LaneCard
-            title="Duplicate guard"
-            body="Backend validation still blocks invalid or already-used passes at the moment of check-in."
-          />
+          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[30rem]">
+            <SummaryCard
+              icon={<Camera className="h-4 w-4" />}
+              label="Scanner"
+              value={isScanning ? "Live" : "Ready"}
+              hint={isScanning ? "Camera active" : "Ready when doors open"}
+            />
+            <SummaryCard
+              icon={<ClipboardCheck className="h-4 w-4" />}
+              label="Manual entry"
+              value="Available"
+              hint="Paste a code if needed"
+            />
+            <SummaryCard
+              icon={<Ticket className="h-4 w-4" />}
+              label="Latest result"
+              value={result?.statusLabel ?? "Waiting"}
+              hint={result?.orderReference ?? "No recent check-in"}
+            />
+          </div>
         </div>
+      </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <div className="overflow-hidden rounded-[2rem] border border-[color:rgba(255,255,255,0.08)] bg-[color:#09110d]">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 text-sm text-white/82">
-              <p className="eyebrow text-white/78">Scanner feed</p>
+      {error ? (
+        <div className="rounded-[1.2rem] border border-[color:rgba(162,40,49,0.16)] bg-[color:rgba(162,40,49,0.08)] px-4 py-3 text-sm text-[color:var(--danger)]">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(21rem,0.8fr)]">
+        <div className="space-y-6">
+          <section className="section-card overflow-hidden rounded-[2rem]">
+            <div className="flex flex-col gap-4 border-b border-[color:var(--line)] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[color:var(--ink)]">Scanner</h2>
+                <p className="text-sm text-[color:var(--muted)]">
+                  Use the camera to scan tickets at the door.
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={isScanning ? stopScanner : handleStartScanner}
@@ -158,161 +181,263 @@ export function OperatorConsole() {
               >
                 {isScanning ? (
                   <>
-                    <TicketSlash className="h-4 w-4" />
-                    Stop scanner
+                    <CameraOff className="h-4 w-4" />
+                    Stop camera
                   </>
                 ) : (
                   <>
                     <Camera className="h-4 w-4" />
-                    Start scanner
+                    Start camera
                   </>
                 )}
               </button>
             </div>
-            <div className="relative aspect-[4/3] bg-[radial-gradient(circle_at_top,_rgba(211,71,57,0.18),_transparent_44%),linear-gradient(180deg,#111614,#060908)]">
-              <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 rounded-[2rem] border border-dashed border-white/50 shadow-[0_0_0_9999px_rgba(5,16,12,0.34)]" />
+
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_19rem]">
+              <div className="relative aspect-[4/3] bg-[color:#0b0f10]">
+                <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="h-52 w-52 rounded-[1.5rem] border-2 border-white/70 shadow-[0_0_0_9999px_rgba(5,8,10,0.38)]" />
+                </div>
+                {!isScanning ? (
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/82">
+                    <ScanLine className="h-8 w-8" />
+                    <p className="text-sm">Camera preview appears here</p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="space-y-4 border-t border-[color:var(--line)] p-5 lg:border-l lg:border-t-0">
+                <InfoPanel
+                  label="Status"
+                  value={scannerMessage ?? "Start the camera or use manual entry."}
+                />
+
+                {devices.length > 1 ? (
+                  <label className="space-y-2">
+                    <span className="text-sm font-medium text-[color:var(--ink)]">
+                      Camera
+                    </span>
+                    <select
+                      value={activeDeviceId}
+                      onChange={(event) => setActiveDeviceId(event.target.value)}
+                      className="h-11 w-full rounded-[1rem] border border-[color:var(--line-strong)] bg-[color:var(--panel-input)] px-3 text-sm text-[color:var(--ink)]"
+                    >
+                      {devices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || "Camera device"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+
+                <div className="rounded-[1rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4 text-sm leading-6 text-[color:var(--muted)]">
+                  <p className="font-medium text-[color:var(--ink)]">Tip</p>
+                  <p className="mt-2">
+                    Hold the QR inside the frame and keep glare low.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="space-y-4 rounded-[2rem] border border-[color:var(--line)] bg-[linear-gradient(180deg,var(--panel),var(--panel-contrast))] p-5">
-            <div>
-              <p className="eyebrow text-[color:var(--muted)]">Camera state</p>
-              <p className="mt-2 text-sm leading-7 text-[color:var(--ink)]">
-                {scannerMessage ?? "Use manual mode or start the camera for QR scanning."}
+          <section className="section-card rounded-[2rem] p-6">
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold text-[color:var(--ink)]">
+                Manual entry
+              </h2>
+              <p className="text-sm text-[color:var(--muted)]">
+                Paste a ticket code or QR payload if the camera is unavailable.
               </p>
             </div>
 
-            {devices.length > 1 ? (
+            <form onSubmit={handleManualSubmit} className="mt-5 space-y-4">
               <label className="space-y-2">
-                <span className="text-sm font-medium text-[color:var(--ink)]">Camera</span>
-                <select
-                  value={activeDeviceId}
-                  onChange={(event) => setActiveDeviceId(event.target.value)}
-                  className="h-11 w-full rounded-[1rem] border border-[color:var(--line-strong)] bg-[color:var(--panel-input)] px-3 text-sm text-[color:var(--ink)]"
-                >
-                  {devices.map((device) => (
-                    <option key={device.deviceId} value={device.deviceId}>
-                      {device.label || "Camera device"}
-                    </option>
-                  ))}
-                </select>
+                <span className="text-sm font-medium text-[color:var(--ink)]">
+                  Ticket code or QR payload
+                </span>
+                <textarea
+                  rows={4}
+                  value={accessCode}
+                  onChange={(event) => setAccessCode(event.target.value)}
+                  placeholder="Paste the ticket code or QR payload"
+                  className="w-full rounded-[1.2rem] border border-[color:var(--line-strong)] bg-[color:var(--panel-input)] px-4 py-3 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent-strong)]"
+                />
               </label>
-            ) : null}
 
-            <div className="rounded-[1.5rem] border border-[color:var(--line)] bg-white p-4 text-sm leading-7 text-[color:var(--muted)]">
-              <p>Manual fallback stays available at all times.</p>
-              <p>QR codes may contain raw access codes or a JSON payload with `accessCode`.</p>
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handleManualSubmit} className="space-y-4">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-[color:var(--ink)]">
-              Access code or scanned payload
-            </span>
-            <textarea
-              rows={3}
-              value={accessCode}
-              onChange={(event) => setAccessCode(event.target.value)}
-              placeholder="Paste the access code or let the scanner fill it"
-              className="w-full rounded-[1.2rem] border border-[color:var(--line-strong)] bg-[color:var(--panel-input)] px-4 py-3 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent-strong)]"
-            />
-          </label>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={buttonClasses({
-                variant: "primary",
-                size: "lg",
-              })}
-            >
-              {isSubmitting ? (
-                <>
-                  <LoaderCircle className="h-5 w-5 animate-spin" />
-                  Checking ticket…
-                </>
-              ) : (
-                <>
-                  <ScanLine className="h-5 w-5" />
-                  Validate ticket
-                </>
-              )}
-            </button>
-            <p className="text-sm text-[color:var(--muted)]">
-              Use this if the guest opens a copied code, screenshot, or raw QR payload.
-            </p>
-          </div>
-        </form>
-
-        {error ? (
-          <div className="rounded-[1.2rem] border border-[color:rgba(162,40,49,0.16)] bg-[color:rgba(162,40,49,0.08)] px-4 py-3 text-sm text-[color:var(--danger)]">
-            {error}
-          </div>
-        ) : null}
-      </section>
-
-      <aside className="section-card space-y-5 rounded-[2.4rem] p-6 sm:p-8">
-        <div className="space-y-2">
-          <p className="eyebrow text-[color:var(--muted)]">Check-in result</p>
-          <h3 className="font-[family:var(--font-display)] text-3xl text-[color:var(--ink)]">
-            {result ? "Guest status updated" : "Awaiting scan"}
-          </h3>
-        </div>
-
-        {result ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-[1.5rem] border border-[color:rgba(47,111,80,0.16)] bg-[color:rgba(47,111,80,0.08)] p-4 text-[color:var(--success)]">
-              <CheckCircle2 className="h-5 w-5" />
-              <div>
-                <p className="text-sm font-semibold">{result.statusLabel}</p>
-                <p className="text-sm text-[color:var(--ink)]">
-                  {result.checkedInAtLabel ?? "Recorded just now"}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-[color:var(--muted)]">
+                  Accepted formats: ticket code or a QR payload containing
+                  <span className="font-mono"> accessCode</span>.
                 </p>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={buttonClasses({
+                    variant: "primary",
+                    size: "lg",
+                  })}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoaderCircle className="h-5 w-5 animate-spin" />
+                      Checking ticket…
+                    </>
+                  ) : (
+                    <>
+                      <ScanLine className="h-5 w-5" />
+                      Validate ticket
+                    </>
+                  )}
+                </button>
               </div>
+            </form>
+          </section>
+        </div>
+
+        <aside className="space-y-6">
+          <section className="section-card rounded-[2rem] p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2">
+                <p className="eyebrow text-[color:var(--muted)]">Latest result</p>
+                <h2 className="font-[family:var(--font-display)] text-3xl text-[color:var(--ink)]">
+                  {result ? "Check-in complete" : "Waiting for ticket"}
+                </h2>
+              </div>
+              {result ? <StatusBadge label={result.statusLabel} tone="success" /> : null}
             </div>
 
-            <ResultRow label="Access code" value={result.accessCode} />
-            <ResultRow label="Order" value={result.orderReference} />
-            <ResultRow label="Guest" value={result.buyerDisplayName ?? result.buyerEmail} />
-            <ResultRow label="Event" value={result.eventTitle} hint={result.eventVenue} />
-          </div>
-        ) : (
-          <div className="rounded-[1.5rem] border border-[color:var(--line)] bg-[linear-gradient(180deg,var(--panel),var(--panel-contrast))] p-5 text-sm leading-7 text-[color:var(--muted)]">
-            <div className="mb-3 flex items-center gap-3 text-[color:var(--warning)]">
-              <TriangleAlert className="h-5 w-5" />
-              <p className="font-medium text-[color:var(--ink)]">No ticket checked in yet</p>
+            {result ? (
+              <div className="mt-5 space-y-4">
+                <div className="rounded-[1rem] border border-[color:rgba(47,111,80,0.16)] bg-[color:rgba(47,111,80,0.08)] p-4">
+                  <div className="flex items-center gap-3 text-[color:var(--success)]">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--ink)]">
+                        {result.buyerDisplayName ?? result.buyerEmail}
+                      </p>
+                      <p className="text-sm text-[color:var(--muted)]">
+                        {result.checkedInAtLabel ?? "Checked in just now"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <ResultRow label="Booking" value={result.orderReference} />
+                <ResultRow label="Ticket code" value={result.accessCode} />
+                <ResultRow
+                  label="Guest"
+                  value={result.buyerDisplayName ?? result.buyerEmail}
+                />
+                <ResultRow
+                  label="Event"
+                  value={result.eventTitle}
+                  hint={result.eventVenue}
+                />
+              </div>
+            ) : (
+              <div className="mt-5 rounded-[1rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4 text-sm leading-6 text-[color:var(--muted)]">
+                No ticket has been checked in yet. Scan a QR code or use manual entry
+                to record the next guest.
+              </div>
+            )}
+          </section>
+
+          <section className="section-card rounded-[2rem] p-6">
+            <div className="space-y-2">
+              <p className="eyebrow text-[color:var(--muted)]">Process</p>
+              <h2 className="text-xl font-semibold text-[color:var(--ink)]">
+                Door workflow
+              </h2>
             </div>
-            <p>Use the scanner for a faster lane or paste the access code manually.</p>
-            <p>Tiko will block duplicates and invalid entries with the backend state.</p>
-          </div>
-        )}
-      </aside>
+
+            <div className="mt-4 space-y-3">
+              <ProcessStep
+                step="1"
+                title="Scan or paste"
+                body="Capture the guest ticket with the camera or use manual entry."
+              />
+              <ProcessStep
+                step="2"
+                title="Review the result"
+                body="Confirm the guest name, booking reference, and event details."
+              />
+              <ProcessStep
+                step="3"
+                title="Admit the guest"
+                body="Allow entry only after a successful check-in result is shown."
+              />
+            </div>
+          </section>
+
+          {!result && !error ? (
+            <section className="section-card rounded-[2rem] p-6">
+              <div className="flex items-start gap-3 text-[color:var(--warning)]">
+                <TriangleAlert className="mt-0.5 h-5 w-5" />
+                <div className="space-y-2 text-sm leading-6 text-[color:var(--muted)]">
+                  <p className="font-medium text-[color:var(--ink)]">Entry checks</p>
+                  <p>
+                    The system blocks invalid tickets and duplicate check-ins
+                    automatically.
+                  </p>
+                </div>
+              </div>
+            </section>
+          ) : null}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard(props: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-[1.25rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
+      <div className="flex items-center gap-2 text-[color:var(--utility)]">
+        {props.icon}
+        <p className="text-sm font-semibold text-[color:var(--ink)]">{props.label}</p>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-[color:var(--ink)]">{props.value}</p>
+      <p className="mt-1 text-sm text-[color:var(--muted)]">{props.hint}</p>
+    </div>
+  );
+}
+
+function InfoPanel(props: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
+      <p className="eyebrow text-[color:var(--muted)]">{props.label}</p>
+      <p className="mt-2 text-sm leading-6 text-[color:var(--ink)]">{props.value}</p>
     </div>
   );
 }
 
 function ResultRow(props: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
+    <div className="rounded-[1rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
       <p className="eyebrow text-[color:var(--muted)]">{props.label}</p>
       <p className="mt-2 text-sm font-semibold text-[color:var(--ink)]">{props.value}</p>
       {props.hint ? (
-        <p className="mt-2 text-sm text-[color:var(--muted)]">{props.hint}</p>
+        <p className="mt-1 text-sm text-[color:var(--muted)]">{props.hint}</p>
       ) : null}
     </div>
   );
 }
 
-function LaneCard(props: { title: string; body: string }) {
+function ProcessStep(props: { step: string; title: string; body: string }) {
   return (
-    <div className="rounded-[1.6rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
-      <p className="text-sm font-semibold text-[color:var(--ink)]">{props.title}</p>
+    <div className="rounded-[1rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-[color:var(--ink)]">{props.title}</p>
+        <span className="eyebrow text-[color:var(--muted)]">{props.step}</span>
+      </div>
       <p className="mt-2 text-sm leading-6 text-[color:var(--muted)]">{props.body}</p>
     </div>
   );

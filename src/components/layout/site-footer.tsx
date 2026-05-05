@@ -2,65 +2,56 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[color:var(--line)] py-10">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 text-sm text-[color:var(--muted)] sm:px-8 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
-          <p className="font-[family:var(--font-display)] text-3xl text-[color:var(--ink)]">
-            Tiko
-          </p>
-          <p className="max-w-2xl leading-7">
-            Buy tickets with clear pricing, receive one live QR credential, and keep
-            event-day entry simple. Event teams can track payment confirmation and run
-            check-in from the same system.
-          </p>
-        </div>
-        <div className="grid gap-6 text-sm sm:grid-cols-3">
-          <FooterColumn
-            title="Attend"
-            links={[
-              { href: "/#lineup", label: "Current events" },
-              { href: "/#flow", label: "Buying steps" },
-            ]}
-          />
-          <FooterColumn
-            title="Event teams"
-            links={[
-              { href: "/sell", label: "List an event" },
-              { href: "/operator", label: "Run check-in" },
-              { href: "/operator", label: "Operator console" },
-            ]}
-          />
-          <div className="space-y-2">
-            <p className="eyebrow text-[color:var(--muted)]">What stays true</p>
-            <p className="max-w-xs leading-6">
-              Buyers see the amount before payment, and venue access still follows the
-              live Tiko ticket state.
-            </p>
+    <footer className="px-4 pb-6 pt-2 sm:px-6 sm:pb-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="section-card-dark overflow-hidden rounded-[2.3rem] px-6 py-8 sm:px-8 sm:py-10">
+          <div className="relative">
+            <div className="absolute -right-10 top-0 h-44 w-44 rounded-full bg-[color:rgba(207,79,64,0.16)] blur-3xl" />
+            <div className="absolute bottom-0 left-1/3 h-36 w-36 rounded-full bg-[color:rgba(70,120,94,0.12)] blur-3xl" />
+
+            <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[1.25rem] bg-[linear-gradient(145deg,rgba(255,250,246,0.2),rgba(255,250,246,0.08))] shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]">
+                    <span className="font-mono text-sm font-semibold uppercase tracking-[0.24em] text-white">
+                      TI
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-[family:var(--font-display)] text-3xl leading-none text-white">
+                      Tiko
+                    </p>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/58">
+                      Events. Booking. Entry.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="max-w-xl font-[family:var(--font-display)] text-3xl leading-tight text-white sm:text-4xl">
+                    Keep the night simple.
+                  </p>
+                  <p className="max-w-md text-sm leading-7 text-white/74">
+                    One event page. One booking flow. One ticket ready at the door.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start gap-4 lg:items-end">
+                <Link
+                  href="#"
+                  className="rounded-full border border-white/14 bg-white/8 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
+                >
+                  Back to top
+                </Link>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/46">
+                  Live events, {new Date().getFullYear()}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterColumn(props: {
-  title: string;
-  links: Array<{ href: string; label: string }>;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="eyebrow text-[color:var(--muted)]">{props.title}</p>
-      <div className="space-y-2">
-        {props.links.map((link) => (
-          <Link
-            key={link.href + link.label}
-            href={link.href}
-            className="block transition hover:text-[color:var(--ink)]"
-          >
-            {link.label}
-          </Link>
-        ))}
-      </div>
-    </div>
   );
 }

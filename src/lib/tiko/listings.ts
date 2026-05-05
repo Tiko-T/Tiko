@@ -10,10 +10,12 @@ type CreateEventListingInput = {
   venue: string;
   startsAtIso: string;
   endsAtIso: string;
+  pricingMode: "paid" | "free";
+  eventImageSrc?: string | null;
   ticketTitle: string;
   ticketTierName: string;
   description: string;
-  ticketPrice: string;
+  ticketPrice?: string;
   capacity: number;
 };
 
@@ -71,6 +73,18 @@ function decimalPriceToUnits(value: string, decimals: number) {
   return units.toString();
 }
 
+function resolveListingUnitPrice(
+  pricingMode: CreateEventListingInput["pricingMode"],
+  ticketPrice: string | undefined,
+  decimals: number
+) {
+  if (pricingMode === "free") {
+    return "0";
+  }
+
+  return decimalPriceToUnits(ticketPrice ?? "", decimals);
+}
+
 export async function createEventListing(input: CreateEventListingInput) {
   const startsAt = new Date(input.startsAtIso);
   const endsAt = new Date(input.endsAtIso);
@@ -84,7 +98,11 @@ export async function createEventListing(input: CreateEventListingInput) {
   }
 
   const paymentToken = await syncSupportedPaymentToken();
-  const unitPrice = decimalPriceToUnits(input.ticketPrice, env.CKB_TOKEN_DECIMALS);
+  const unitPrice = resolveListingUnitPrice(
+    input.pricingMode,
+    input.ticketPrice,
+    env.CKB_TOKEN_DECIMALS
+  );
 
   return db.$transaction(async (tx) => {
     const merchantSlug = slugify(input.organizerName) || "organizer";
@@ -125,6 +143,7 @@ export async function createEventListing(input: CreateEventListingInput) {
         slug: eventSlug,
         title: input.eventTitle,
         venue: input.venue,
+        imageSrc: input.eventImageSrc ?? null,
         startsAt,
         endsAt,
       },

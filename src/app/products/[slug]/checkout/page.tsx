@@ -1,16 +1,11 @@
 import { notFound } from "next/navigation";
-import {
-  ArrowLeft,
-  CalendarDays,
-  ShieldCheck,
-  Ticket,
-  Wallet,
-} from "lucide-react";
+import { ArrowLeft, CalendarDays, Ticket } from "lucide-react";
 import Link from "next/link";
 
 import { CheckoutForm } from "@/components/buyer/checkout-form";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { requireSignedInUser } from "@/lib/auth/page-guards";
 import { getCatalogProductBySlug } from "@/lib/frontend/server-data";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +17,7 @@ export default async function CheckoutPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const currentUser = await requireSignedInUser(`/products/${slug}/checkout`);
   const product = await getCatalogProductBySlug(slug);
 
   if (!product) {
@@ -44,37 +40,17 @@ export default async function CheckoutPage({
           <div className="space-y-6">
             <section className="section-card rounded-[2.5rem] px-6 py-8 sm:px-8">
               <div className="space-y-3">
-                <p className="eyebrow text-[color:var(--accent-strong)]">Checkout</p>
+                <p className="eyebrow text-[color:var(--accent-strong)]">Booking</p>
                 <h1 className="font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)] sm:text-5xl">
-                  Enter your details, then pay for the ticket.
+                  Finish your booking.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-[color:var(--muted)]">
-                  Start with the contact details for this order. You will see the payment
-                  instructions next, followed by your live ticket after confirmation.
+                  Enter the details for this booking and continue.
                 </p>
-              </div>
-
-              <div className="mt-6 grid gap-3 md:grid-cols-3">
-                <CheckoutStage
-                  step="01"
-                  title="Your details"
-                  body="Enter the name and email that should be tied to this order."
-                  active
-                />
-                <CheckoutStage
-                  step="02"
-                  title="Wallet payment"
-                  body="Pay the exact amount from a supported CKB wallet."
-                />
-                <CheckoutStage
-                  step="03"
-                  title="Ticket unlock"
-                  body="The QR credential goes live after chain confirmation."
-                />
               </div>
             </section>
 
-            <CheckoutForm product={product} />
+            <CheckoutForm product={product} currentUser={currentUser} />
           </div>
 
           <aside className="section-card space-y-5 rounded-[2.25rem] p-6 sm:p-8 xl:sticky xl:top-28 xl:h-fit">
@@ -86,7 +62,7 @@ export default async function CheckoutPage({
             </div>
 
             <div className="rounded-[1.7rem] border border-[color:var(--line)] bg-[linear-gradient(180deg,var(--panel),var(--panel-contrast))] p-5">
-              <p className="eyebrow text-[color:var(--muted)]">Final amount</p>
+              <p className="eyebrow text-[color:var(--muted)]">Ticket</p>
               <p className="mt-3 font-[family:var(--font-display)] text-5xl text-[color:var(--ink)]">
                 {product.priceDisplay}
               </p>
@@ -95,28 +71,16 @@ export default async function CheckoutPage({
               </p>
             </div>
 
-            <div className="grid gap-4">
-              <AsideNote
-                icon={<CalendarDays className="h-4 w-4" />}
-                title="Event timing"
-                body={product.event?.windowLabel ?? "Schedule pending"}
-              />
-              <AsideNote
-                icon={<Ticket className="h-4 w-4" />}
-                title="No surprise fees"
-                body="The amount shown here is the amount you will be asked to pay."
-              />
-              <AsideNote
-                icon={<Wallet className="h-4 w-4" />}
-                title="Wallet comes later"
-                body="You only move into the wallet step after the order is created."
-              />
-              <AsideNote
-                icon={<ShieldCheck className="h-4 w-4" />}
-                title="Entry still follows Tiko state"
-                body="Event teams still validate entry through the live Tiko ticket state."
-              />
-            </div>
+            <SummaryRow
+              icon={<CalendarDays className="h-4 w-4" />}
+              label="Event time"
+              value={product.event?.windowLabel ?? "Schedule pending"}
+            />
+            <SummaryRow
+              icon={<Ticket className="h-4 w-4" />}
+              label="Ticket"
+              value={product.tier?.name ?? "General admission"}
+            />
           </aside>
         </div>
       </main>
@@ -125,41 +89,18 @@ export default async function CheckoutPage({
   );
 }
 
-function AsideNote(props: {
+function SummaryRow(props: {
   icon: React.ReactNode;
-  title: string;
-  body: string;
+  label: string;
+  value: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] p-4">
-      <div className="mb-2 flex items-center gap-2 text-[color:var(--utility)]">
+    <div className="rounded-[1.5rem] border border-[color:var(--line)] bg-[color:var(--panel-soft)] px-4 py-3">
+      <div className="flex items-center gap-2 text-[color:var(--utility)]">
         {props.icon}
-        <p className="text-sm font-semibold text-[color:var(--ink)]">{props.title}</p>
+        <p className="text-sm font-semibold text-[color:var(--ink)]">{props.label}</p>
       </div>
-      <p className="text-sm leading-6 text-[color:var(--muted)]">{props.body}</p>
-    </div>
-  );
-}
-
-function CheckoutStage(props: {
-  step: string;
-  title: string;
-  body: string;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-[1.6rem] border p-4 ${
-        props.active
-          ? "border-[color:rgba(169,43,31,0.18)] bg-[color:rgba(207,79,64,0.1)]"
-          : "border-[color:var(--line)] bg-[color:var(--panel-soft)]"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-[color:var(--ink)]">{props.title}</p>
-        <span className="eyebrow text-[color:var(--muted)]">{props.step}</span>
-      </div>
-      <p className="mt-3 text-sm leading-6 text-[color:var(--muted)]">{props.body}</p>
+      <p className="mt-2 text-sm leading-6 text-[color:var(--muted)]">{props.value}</p>
     </div>
   );
 }

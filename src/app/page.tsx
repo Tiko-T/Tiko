@@ -62,16 +62,13 @@ export default async function Home() {
             <div className="space-y-8 text-white">
               <div className="space-y-4">
                 <p className="eyebrow animate-rise text-white/78">
-                  Tickets for concerts, festivals, summits, workshops, and more
+                  Events, booking, and entry in one place
                 </p>
                 <h1 className="animate-rise [animation-delay:120ms] font-[family:var(--font-display)] text-5xl leading-[0.88] sm:text-6xl lg:text-7xl">
-                  Sell tickets, confirm payment, and issue live entry passes from one place.
+                  Create events, manage booking, and run entry from one place.
                 </h1>
                 <p className="animate-rise max-w-2xl [animation-delay:220ms] text-base leading-8 text-white/88 sm:text-lg">
-                  Tiko connects event listings, payment confirmation, QR ticket delivery,
-                  and event-day entry in one workflow. Buyers see the event details and
-                  amount due before paying, while event teams keep sales and check-in in
-                  sync.
+                  Publish an event, open booking, and keep ticket access and check-in in sync.
                 </p>
               </div>
 
@@ -90,14 +87,14 @@ export default async function Home() {
 
               <div className="grid gap-4 pt-2 md:grid-cols-3">
                 <HeroMetric
-                  label="On sale now"
+                  label="Live now"
                   value={available.length ? `${available.length}` : "0"}
-                  body="Current ticketed events listed with date, venue, and amount."
+                  body="Events currently open for booking."
                 />
                 <HeroMetric
-                  label="Buying flow"
-                  value="Clear"
-                  body="Details first, payment next, QR ticket after confirmation."
+                  label="Booking flow"
+                  value="Simple"
+                  body="Event page, booking, and entry in one flow."
                 />
                 <HeroMetric
                   label="Event-day entry"
@@ -108,7 +105,7 @@ export default async function Home() {
             </div>
 
             <aside className="self-end rounded-[2rem] border border-white/12 bg-[color:rgba(20,11,9,0.9)] p-6 shadow-[0_20px_60px_rgba(10,5,4,0.26)]">
-              <p className="eyebrow text-white/76">Use Tiko for</p>
+              <p className="eyebrow text-white/76">Made for</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {eventTypes.map((type) => (
                   <EventTypeChip key={type} label={type} />
@@ -119,12 +116,12 @@ export default async function Home() {
                 <HeroPanel
                   icon={<Ticket className="h-4 w-4" />}
                   title="For attendees"
-                  body="Find what is on sale, review the final amount, and keep one live ticket on hand."
+                  body="Find events, book quickly, and keep one live ticket on hand."
                 />
                 <HeroPanel
                   icon={<Users className="h-4 w-4" />}
                   title="For event teams"
-                  body="Track payment confirmation, issue valid tickets, and move guests through check-in."
+                  body="Publish events, manage booking, and move guests through check-in."
                 />
               </div>
             </aside>
@@ -134,13 +131,13 @@ export default async function Home() {
         <section id="lineup" className="space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
-              <p className="eyebrow text-[color:var(--accent-strong)]">On sale now</p>
+              <p className="eyebrow text-[color:var(--accent-strong)]">Live now</p>
               <h2 className="font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)] sm:text-5xl">
-                Multiple events, one clear buying surface
+                Events open for booking
               </h2>
             </div>
             <div className="flex flex-wrap gap-2">
-              <StatusBadge label={`${available.length} on sale`} tone="accent" />
+              <StatusBadge label={`${available.length} live`} tone="accent" />
               {soldOut.length ? (
                 <StatusBadge label={`${soldOut.length} sold out`} tone="muted" />
               ) : null}
@@ -164,17 +161,17 @@ export default async function Home() {
 
         <section className="grid gap-5 lg:grid-cols-2">
           <AudienceCard
-            eyebrow="Attending an event?"
-            title="Get to the ticket faster."
-            body="See the date, venue, and final amount early, then move through payment and entry with one live credential."
+            eyebrow="Attending?"
+            title="Book faster."
+            body="See the date, venue, and ticket details in one place, then book and keep your entry credential ready."
             icon={<Ticket className="h-5 w-5" />}
             ctaHref="/#lineup"
             ctaLabel="Find your ticket"
           />
           <AudienceCard
-            eyebrow="Selling tickets?"
-            title="Keep sales and check-in in sync."
-            body="Track payment confirmation, issue active tickets, and validate guests at the venue from the same system."
+            eyebrow="Hosting?"
+            title="Run booking and entry together."
+            body="Publish paid or free events, issue active tickets, and validate guests at the venue from one system."
             icon={<ShieldCheck className="h-5 w-5" />}
             ctaHref="/sell"
             ctaLabel="List an event"
@@ -186,19 +183,19 @@ export default async function Home() {
             icon={<CalendarDays className="h-5 w-5" />}
             step="01"
             title="Choose the event"
-            body="Start with the schedule, venue, and amount so you can decide quickly."
+            body="Start with the date, venue, and ticket details."
           />
           <FlowCard
             icon={<Wallet className="h-5 w-5" />}
             step="02"
-            title="Reserve the ticket"
-            body="Enter your contact details first, then follow the payment instructions for the exact amount."
+            title="Complete booking"
+            body="Enter your details and continue through the booking flow."
           />
           <FlowCard
             icon={<ScanLine className="h-5 w-5" />}
             step="03"
-            title="Use one live credential"
-            body="After confirmation, your QR ticket unlocks for entry and stays ready for event-day scanning."
+            title="Use your ticket"
+            body="Your QR ticket stays ready for entry on the day."
           />
         </section>
       </main>
@@ -208,7 +205,10 @@ export default async function Home() {
 }
 
 function SellingEventCard(props: { product: CatalogProductView }) {
-  const artwork = getEventArtwork(props.product.slug);
+  const artwork = getEventArtwork({
+    imageSrc: props.product.event?.imageSrc,
+    title: props.product.event?.title ?? props.product.title,
+  });
   const available = (props.product.tier?.remaining ?? props.product.inventory) > 0;
 
   return (
@@ -218,6 +218,7 @@ function SellingEventCard(props: { product: CatalogProductView }) {
           src={artwork.squareSrc}
           alt={artwork.squareAlt}
           fill
+          unoptimized={artwork.unoptimized}
           sizes="(min-width: 1280px) 30vw, (min-width: 768px) 46vw, 100vw"
           className="object-cover transition duration-500 group-hover:scale-[1.02]"
         />
@@ -276,7 +277,7 @@ function SellingEventCard(props: { product: CatalogProductView }) {
                 block: true,
               })}
             >
-              Buy this ticket
+              Get ticket
             </Link>
           ) : null}
         </div>
@@ -288,13 +289,12 @@ function SellingEventCard(props: { product: CatalogProductView }) {
 function EmptyLineupCard() {
   return (
     <article className="section-card rounded-[2rem] p-6 sm:p-8">
-      <p className="eyebrow text-[color:var(--muted)]">No events on sale right now</p>
+      <p className="eyebrow text-[color:var(--muted)]">No live events right now</p>
       <h3 className="mt-4 font-[family:var(--font-display)] text-4xl text-[color:var(--ink)]">
-        Upcoming tickets will appear here.
+        New events will appear here.
       </h3>
       <p className="mt-4 max-w-xl text-sm leading-7 text-[color:var(--muted)]">
-        As soon as an event opens for sale, attendees will be able to compare the key
-        details and move into checkout from this section.
+        As soon as an event opens for booking, it will appear here.
       </p>
     </article>
   );
@@ -305,11 +305,10 @@ function SellerSupportCard() {
     <article className="section-card rounded-[2rem] p-6 sm:p-8">
       <p className="eyebrow text-[color:var(--accent-strong)]">Running an event?</p>
       <h3 className="mt-4 font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)]">
-        Keep payment confirmation and entry aligned.
+        Publish once. Run entry from the same place.
       </h3>
       <p className="mt-4 text-sm leading-7 text-[color:var(--muted)]">
-        Tiko is designed so the ticket buyers see matches the system your event team
-        uses at check-in. No separate entry workflow, no disconnected payment state.
+        Keep the booking page and check-in flow aligned for your team and guests.
       </p>
       <div className="mt-6">
         <Link

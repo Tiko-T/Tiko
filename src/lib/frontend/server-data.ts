@@ -1,6 +1,7 @@
 import { env } from "@/lib/env";
 import { getOrderById, type OrderWithDetails } from "@/lib/tiko/orders";
 import { listCatalog } from "@/lib/tiko/setup";
+import { toServedEventImageSrc } from "@/lib/tiko/event-images";
 
 import {
   formatDateTimeLabel,
@@ -26,12 +27,18 @@ function getAudienceProductDescription(slug: string, fallback: string) {
   return fallback;
 }
 
+function isFreeAmount(value: string) {
+  return BigInt(value) === 0n;
+}
+
 export function toCatalogProductView(product: CatalogProductRecord): CatalogProductView {
+  const isFree = isFreeAmount(product.unitPrice);
   const event = product.event
     ? {
         slug: product.event.slug,
         title: product.event.title,
         venue: product.event.venue,
+        imageSrc: toServedEventImageSrc(product.event.imageSrc),
         startsAt: product.event.startsAt.toISOString(),
         endsAt: product.event.endsAt.toISOString(),
         windowLabel: formatEventWindow(
@@ -61,11 +68,10 @@ export function toCatalogProductView(product: CatalogProductRecord): CatalogProd
     title: product.title,
     description: getAudienceProductDescription(product.slug, product.description),
     kind: product.kind,
-    priceDisplay: formatTokenAmount(
-      product.unitPrice,
-      env.CKB_TOKEN_DECIMALS,
-      env.CKB_TOKEN_SYMBOL
-    ),
+    isFree,
+    priceDisplay: isFree
+      ? "Free"
+      : formatTokenAmount(product.unitPrice, env.CKB_TOKEN_DECIMALS, env.CKB_TOKEN_SYMBOL),
     inventory: product.inventory,
     merchantName: product.merchant.name,
     detailsHref: `/products/${product.slug}`,
@@ -99,6 +105,7 @@ function deriveOrderStage(order: OrderWithDetails): OrderView["stage"] {
 export function toOrderView(order: OrderWithDetails): OrderView {
   const symbol = order.paymentIntent?.token.symbol ?? env.CKB_TOKEN_SYMBOL;
   const decimals = order.paymentIntent?.token.decimals ?? env.CKB_TOKEN_DECIMALS;
+  const isFree = isFreeAmount(order.paymentAmount);
   const stage = deriveOrderStage(order);
   const event = order.product.event
     ? {
@@ -142,28 +149,35 @@ export function toOrderView(order: OrderWithDetails): OrderView {
     tierName: order.tier?.name ?? null,
     quantity: order.quantity,
     receiverAddress: order.receiverAddress,
-    receiverAddressShort: shortenHash(order.receiverAddress, 14, 6),
+    receiverAddressShort: order.receiverAddress
+      ? shortenHash(order.receiverAddress, 14, 6)
+      : "",
     payerAddress: order.payerAddress ?? null,
     payerAddressShort: order.payerAddress
       ? shortenHash(order.payerAddress, 14, 6)
       : null,
     pricing: {
+      isFree,
       symbol,
       decimals,
       unitAmount: order.unitPrice,
       totalAmount: order.totalAmount,
       paymentAmount: order.paymentAmount,
-      unitDisplay: formatTokenAmount(order.unitPrice, decimals, symbol),
-      totalDisplay: formatTokenAmount(order.totalAmount, decimals, symbol),
-      paymentDisplay: formatTokenAmount(order.paymentAmount, decimals, symbol),
+      unitDisplay: isFree ? "Free" : formatTokenAmount(order.unitPrice, decimals, symbol),
+      totalDisplay: isFree ? "Free" : formatTokenAmount(order.totalAmount, decimals, symbol),
+      paymentDisplay: isFree
+        ? "Free"
+        : formatTokenAmount(order.paymentAmount, decimals, symbol),
     },
     payment: {
-      status: order.paymentIntent?.status ?? "PENDING",
+      status: order.paymentIntent?.status ?? (isFree ? "NOT_REQUIRED" : "PENDING"),
       statusLabel:
-        order.paymentIntent?.status === "CONFIRMING"
+        isFree
+          ? "No payment required"
+          : order.paymentIntent?.status === "CONFIRMING"
           ? "Waiting for chain confirmation"
           : titleFromScreamingSnake(order.paymentIntent?.status ?? "PENDING"),
-      confirmationsRequired: order.paymentIntent?.confirmationsRequired ?? 1,
+      confirmationsRequired: order.paymentIntent?.confirmationsRequired ?? 0,
       submittedTxHash: order.paymentIntent?.submittedTxHash ?? null,
       submittedTxHashShort: order.paymentIntent?.submittedTxHash
         ? shortenHash(order.paymentIntent.submittedTxHash)
@@ -173,9 +187,9 @@ export function toOrderView(order: OrderWithDetails): OrderView {
         ? shortenHash(order.paymentIntent.confirmedTxHash)
         : null,
       expiresAt:
-        order.paymentIntent?.expiresAt.toISOString() ?? new Date().toISOString(),
+        order.paymentIntent?.expiresAt.toISOString() ?? order.createdAt.toISOString(),
       expiresAtLabel: formatDateTimeLabel(
-        order.paymentIntent?.expiresAt.toISOString() ?? new Date().toISOString()
+        order.paymentIntent?.expiresAt.toISOString() ?? order.createdAt.toISOString()
       ),
     },
     ticket: order.entitlement
@@ -209,10 +223,12 @@ export function toOrderView(order: OrderWithDetails): OrderView {
       : null,
     actions: {
       canSubmitTxHash:
+        !isFree &&
         !order.paymentIntent?.submittedTxHash &&
         order.status !== "FULFILLED" &&
         order.status !== "FAILED",
       canRetryConfirmation:
+        !isFree &&
         !!order.paymentIntent?.submittedTxHash &&
         order.status !== "FULFILLED" &&
         order.paymentIntent.status !== "CONFIRMED",

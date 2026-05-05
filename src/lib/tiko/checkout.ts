@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { env, toPrismaNetwork } from "@/lib/env";
 
 import { getOrderOrThrow } from "./orders";
+import { fulfillFreeOrder } from "./fulfillment";
 import { syncSupportedPaymentToken } from "./setup";
 
 const orderReference = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10);
@@ -62,9 +63,13 @@ export async function createCheckoutOrder(input: {
     },
   });
 
-  const token = await syncSupportedPaymentToken();
   const unitPrice = BigInt(product.unitPrice);
   const totalAmount = unitPrice * BigInt(quantity);
+  const paymentRequired = totalAmount > 0n;
+  const token = paymentRequired ? await syncSupportedPaymentToken() : null;
+  const receiverAddress = paymentRequired
+    ? token!.receiverAddress
+    : product.merchant.settlementAddress;
 
   const order = await db.order.create({
     data: {
@@ -77,20 +82,28 @@ export async function createCheckoutOrder(input: {
       unitPrice: unitPrice.toString(),
       totalAmount: totalAmount.toString(),
       paymentAmount: totalAmount.toString(),
-      receiverAddress: token.receiverAddress,
+      receiverAddress,
       network: toPrismaNetwork(env.CKB_NETWORK),
-      paymentIntent: {
-        create: {
-          supportedPaymentTokenId: token.id,
-          expectedAmount: totalAmount.toString(),
-          xudtArgs: token.xudtArgs,
-          receiverAddress: token.receiverAddress,
-          confirmationsRequired: env.PAYMENT_CONFIRMATIONS_REQUIRED,
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-        },
-      },
+      ...(paymentRequired && token
+        ? {
+            paymentIntent: {
+              create: {
+                supportedPaymentTokenId: token.id,
+                expectedAmount: totalAmount.toString(),
+                xudtArgs: token.xudtArgs,
+                receiverAddress: token.receiverAddress,
+                confirmationsRequired: env.PAYMENT_CONFIRMATIONS_REQUIRED,
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+              },
+            },
+          }
+        : {}),
     },
   });
+
+  if (!paymentRequired) {
+    return fulfillFreeOrder(order.id);
+  }
 
   return getOrderOrThrow(order.id);
 }

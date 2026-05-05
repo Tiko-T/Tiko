@@ -1,8 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { OrderExperience } from "@/components/buyer/order-experience";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { canAccessOrder, getCurrentUser } from "@/lib/auth/session";
 import { getOrderViewById } from "@/lib/frontend/server-data";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,19 @@ export default async function OrderPage({
 }: {
   params: Promise<{ orderId: string }>;
 }) {
-  const { orderId } = await params;
+  const [{ orderId }, currentUser] = await Promise.all([params, getCurrentUser()]);
+
+  if (!currentUser) {
+    redirect(`/login?next=${encodeURIComponent(`/orders/${orderId}`)}`);
+  }
+
   const order = await getOrderViewById(orderId);
 
   if (!order) {
+    notFound();
+  }
+
+  if (!canAccessOrder(currentUser, order.buyer.email)) {
     notFound();
   }
 

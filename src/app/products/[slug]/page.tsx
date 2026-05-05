@@ -34,7 +34,10 @@ export default async function ProductPage({
     notFound();
   }
 
-  const artwork = getEventArtwork(product.slug);
+  const artwork = getEventArtwork({
+    imageSrc: product.event?.imageSrc,
+    title: product.event?.title ?? product.title,
+  });
 
   return (
     <>
@@ -97,24 +100,23 @@ export default async function ProductPage({
                 alt={artwork.portraitAlt}
                 fill
                 priority
+                unoptimized={artwork.unoptimized}
                 sizes="(min-width: 1024px) 25rem, 100vw"
                 className="object-cover"
               />
             </div>
-            <p className="eyebrow text-[color:var(--muted)]">Get tickets</p>
+            <p className="eyebrow text-[color:var(--muted)]">Booking</p>
             <div className="mt-5 space-y-3">
               <h2 className="font-[family:var(--font-display)] text-4xl leading-tight text-[color:var(--ink)]">
-                See the amount before you pay.
+                Reserve your place.
               </h2>
               <p className="text-sm leading-7 text-[color:var(--muted)]">
-                Start by reserving your ticket with your contact details. Payment
-                instructions appear next, followed by your live QR ticket after
-                confirmation.
+                Complete the booking form and your ticket will be ready for entry.
               </p>
             </div>
 
             <div className="mt-6 rounded-[1.7rem] border border-[color:var(--line)] bg-[linear-gradient(180deg,var(--panel),var(--panel-contrast))] p-5">
-              <p className="eyebrow text-[color:var(--muted)]">Price</p>
+              <p className="eyebrow text-[color:var(--muted)]">Ticket</p>
               <p className="mt-3 font-[family:var(--font-display)] text-5xl text-[color:var(--ink)]">
                 {product.priceDisplay}
               </p>
@@ -132,36 +134,26 @@ export default async function ProductPage({
                   block: true,
                 })}
               >
-                Reserve this pass
+                Book now
                 <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link
-                href="/operator"
-                className={buttonClasses({
-                  variant: "secondary",
-                  size: "md",
-                  block: true,
-                })}
-              >
-                Event team preview
               </Link>
             </div>
 
             <div className="mt-6 space-y-4">
               <FeaturePoint
                 icon={<Wallet className="h-4 w-4" />}
-                title="Guest checkout first"
-                body="Enter your email and name before the payment step begins."
+                title="Booking"
+                body="Use your contact details to complete the booking and receive your ticket."
               />
               <FeaturePoint
                 icon={<ShieldCheck className="h-4 w-4" />}
-                title="Venue access stays app-controlled"
-                body="Event teams still validate entry through the live Tiko ticket state."
+                title="Digital ticket access"
+                body="Your ticket stays available online, so you can open it again whenever you need it."
               />
               <FeaturePoint
                 icon={<Sparkles className="h-4 w-4" />}
-                title="Proof becomes collectible"
-                body="After payment confirms, Tiko mints a Spore-backed ownership object."
+                title="Ready for entry"
+                body="Bring your ticket on the day and have it ready to show at the venue."
               />
             </div>
           </aside>
@@ -172,7 +164,7 @@ export default async function ProductPage({
             <div className="space-y-3">
               <p className="eyebrow text-[color:var(--accent-strong)]">Need to know</p>
               <h2 className="font-[family:var(--font-display)] text-4xl text-[color:var(--ink)]">
-                What you should know before buying
+                Before you book
               </h2>
             </div>
 
@@ -186,33 +178,33 @@ export default async function ProductPage({
                 body={product.event?.venue ?? "Venue pending"}
               />
               <NeedToKnow
-                title="Merchant"
+                title="Organizer"
                 body={product.merchantName}
               />
               <NeedToKnow
-                title="Inventory"
+                title="Availability"
                 body={product.tier?.availabilityLabel ?? "Inventory live"}
               />
             </div>
           </div>
 
           <div className="section-card rounded-[2.25rem] p-6 sm:p-8">
-            <p className="eyebrow text-[color:var(--muted)]">What happens after purchase</p>
+            <p className="eyebrow text-[color:var(--muted)]">After booking</p>
             <div className="mt-5 space-y-4">
               <JourneyStep
                 step="01"
-                title="Reserve the order"
-                body="Tiko holds the exact ticket amount and opens the payment step."
+                title="Complete booking"
+                body="Enter your details and continue through the booking flow."
               />
               <JourneyStep
                 step="02"
-                title="Send payment"
-                body="Pay from a supported CKB wallet and submit the resulting transaction hash."
+                title="Receive ticket"
+                body="Your ticket is issued as soon as the booking is confirmed."
               />
               <JourneyStep
                 step="03"
-                title="Receive your ticket"
-                body="Your QR ticket becomes active after confirmation, with collectible proof added after."
+                title="Open your ticket"
+                body="Your ticket will be ready online so you can bring it with you on the day."
               />
             </div>
           </div>

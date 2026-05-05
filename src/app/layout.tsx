@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Tiko | Live Events",
   description:
-    "Buy event tickets with upfront pricing and help event teams run sales, payment confirmation, and check-in from one place.",
+    "Create events, open booking, and keep entry simple from one place.",
 };
 
 export default function RootLayout({

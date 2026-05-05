@@ -6,6 +6,7 @@ export const catalogProductViewSchema = z.object({
   title: z.string(),
   description: z.string(),
   kind: z.enum(["TICKET", "DIGITAL_COLLECTIBLE", "MEMBERSHIP"]),
+  isFree: z.boolean(),
   priceDisplay: z.string(),
   inventory: z.number().int(),
   merchantName: z.string(),
@@ -16,6 +17,7 @@ export const catalogProductViewSchema = z.object({
       slug: z.string(),
       title: z.string(),
       venue: z.string(),
+      imageSrc: z.string().nullable(),
       startsAt: z.string(),
       endsAt: z.string(),
       windowLabel: z.string(),
@@ -90,6 +92,7 @@ export const orderViewSchema = z.object({
   payerAddress: z.string().nullable(),
   payerAddressShort: z.string().nullable(),
   pricing: z.object({
+    isFree: z.boolean(),
     symbol: z.string(),
     decimals: z.number().int(),
     unitAmount: z.string(),
