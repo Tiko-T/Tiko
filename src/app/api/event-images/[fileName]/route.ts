@@ -2,7 +2,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { fail } from "@/lib/api/responses";
-import { getEventImageContentType } from "@/lib/tiko/event-images";
+import {
+  fetchStoredEventImage,
+  getEventImageContentType,
+} from "@/lib/tiko/event-images";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,6 +26,19 @@ export async function GET(
 ) {
   try {
     const { fileName } = await params;
+    const decodedFileName = decodeURIComponent(fileName);
+
+    const remoteImage = await fetchStoredEventImage(decodedFileName);
+
+    if (remoteImage) {
+      return new Response(remoteImage.body, {
+        headers: {
+          "Content-Type": remoteImage.contentType,
+          "Cache-Control": remoteImage.cacheControl,
+        },
+      });
+    }
+
     const filePath = resolveEventImagePath(fileName);
     const bytes = new Uint8Array(await readFile(filePath));
     const contentType = getEventImageContentType(bytes);

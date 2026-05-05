@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 
 import { env } from "@/lib/env";
 
@@ -94,6 +94,11 @@ export function toServedEventImageSrc(imageSrc: string | null | undefined) {
     return imageSrc;
   }
 
+  if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
+    const encoded = encodeURIComponent(imageSrc);
+    return `/api/event-images/${encoded}`;
+  }
+
   if (imageSrc.startsWith(EVENT_IMAGE_UPLOADS_PREFIX)) {
     const fileName = imageSrc.slice(EVENT_IMAGE_UPLOADS_PREFIX.length);
     return `/api/event-images/${encodeURIComponent(fileName)}`;
@@ -117,12 +122,12 @@ export async function saveUploadedEventImage(params: {
 
   if (env.BLOB_READ_WRITE_TOKEN) {
     const blob = await put(`events/${fileName}`, Buffer.from(fileBuffer), {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
       contentType: getEventImageContentType(fileBuffer) ?? "application/octet-stream",
     });
 
-    return blob.url;
+    return blob.pathname;
   }
 
   const outputDirectory = path.join(process.cwd(), "public", "uploads", "events");
@@ -132,4 +137,27 @@ export async function saveUploadedEventImage(params: {
   await writeFile(outputPath, Buffer.from(fileBuffer));
 
   return relativePath;
+}
+
+export async function fetchStoredEventImage(imageIdentifier: string) {
+  if (imageIdentifier.startsWith("http://") || imageIdentifier.startsWith("https://")) {
+    const blob = await get(imageIdentifier, {
+      access: "private",
+      useCache: true,
+    });
+
+    if (!blob || blob.statusCode !== 200) {
+      return null;
+    }
+
+    const response = new Response(blob.stream);
+
+    return {
+      contentType: blob.blob.contentType,
+      cacheControl: blob.blob.cacheControl,
+      body: Buffer.from(await response.arrayBuffer()),
+    };
+  }
+
+  return null;
 }
