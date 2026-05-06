@@ -26,7 +26,7 @@ export default async function SellPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
-          <EventListingForm paymentSymbol={env.CKB_TOKEN_SYMBOL} />
+          <EventListingForm paymentSymbol={env.PRICE_DISPLAY_SYMBOL} />
 
           <aside className="space-y-4 xl:sticky xl:top-28 xl:h-fit">
             <div className="section-card rounded-[2rem] p-6">
@@ -40,7 +40,7 @@ export default async function SellPage() {
 
             <div className="rounded-[2rem] border border-[color:var(--line)] bg-[color:rgba(255,255,255,0.45)] p-6">
               <p className="text-sm font-semibold text-[color:var(--ink)]">
-                If you set a price, it uses {env.CKB_TOKEN_SYMBOL}.
+                If you set a price, it is displayed in {env.PRICE_DISPLAY_SYMBOL}.
               </p>
             </div>
           </aside>

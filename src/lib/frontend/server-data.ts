@@ -71,7 +71,11 @@ export function toCatalogProductView(product: CatalogProductRecord): CatalogProd
     isFree,
     priceDisplay: isFree
       ? "Free"
-      : formatTokenAmount(product.unitPrice, env.CKB_TOKEN_DECIMALS, env.CKB_TOKEN_SYMBOL),
+      : formatTokenAmount(
+          product.unitPrice,
+          env.CKB_TOKEN_DECIMALS,
+          env.PRICE_DISPLAY_SYMBOL
+        ),
     inventory: product.inventory,
     merchantName: product.merchant.name,
     detailsHref: `/products/${product.slug}`,
@@ -103,8 +107,8 @@ function deriveOrderStage(order: OrderWithDetails): OrderView["stage"] {
 }
 
 export function toOrderView(order: OrderWithDetails): OrderView {
-  const symbol = order.paymentIntent?.token.symbol ?? env.CKB_TOKEN_SYMBOL;
   const decimals = order.paymentIntent?.token.decimals ?? env.CKB_TOKEN_DECIMALS;
+  const displaySymbol = env.PRICE_DISPLAY_SYMBOL;
   const isFree = isFreeAmount(order.paymentAmount);
   const stage = deriveOrderStage(order);
   const event = order.product.event
@@ -158,16 +162,18 @@ export function toOrderView(order: OrderWithDetails): OrderView {
       : null,
     pricing: {
       isFree,
-      symbol,
+      symbol: displaySymbol,
       decimals,
       unitAmount: order.unitPrice,
       totalAmount: order.totalAmount,
       paymentAmount: order.paymentAmount,
-      unitDisplay: isFree ? "Free" : formatTokenAmount(order.unitPrice, decimals, symbol),
-      totalDisplay: isFree ? "Free" : formatTokenAmount(order.totalAmount, decimals, symbol),
+      unitDisplay:
+        isFree ? "Free" : formatTokenAmount(order.unitPrice, decimals, displaySymbol),
+      totalDisplay:
+        isFree ? "Free" : formatTokenAmount(order.totalAmount, decimals, displaySymbol),
       paymentDisplay: isFree
         ? "Free"
-        : formatTokenAmount(order.paymentAmount, decimals, symbol),
+        : formatTokenAmount(order.paymentAmount, decimals, displaySymbol),
     },
     payment: {
       status: order.paymentIntent?.status ?? (isFree ? "NOT_REQUIRED" : "PENDING"),

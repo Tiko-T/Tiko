@@ -33,6 +33,7 @@ const rawEnvSchema = z.object({
   CKB_RPC_URL: z.string().optional(),
   CKB_TOKEN_SYMBOL: z.string().default("tTIKO"),
   CKB_TOKEN_DECIMALS: z.coerce.number().int().min(0).max(18).default(2),
+  PRICE_DISPLAY_SYMBOL: z.string().default("USD"),
   CKB_ISSUER_ADDRESS: z.string().optional(),
   CKB_ISSUER_PRIVATE_KEY: hexPrivateKey.optional(),
   CKB_MERCHANT_PRIVATE_KEY: hexPrivateKey.optional(),
