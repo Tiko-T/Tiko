@@ -7,6 +7,41 @@ import { issueTokensToAddress, waitForTransaction } from "@/lib/ckb/payments";
 import { cccClient } from "@/lib/ckb/ccc-client";
 import { resolveXudtArgs } from "@/lib/ckb/wallets";
 
+const faucetSchemaSql = `
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type
+    WHERE typname = 'FaucetClaimStatus'
+  ) THEN
+    CREATE TYPE "FaucetClaimStatus" AS ENUM ('PENDING', 'SENT', 'FAILED');
+  END IF;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS "FaucetClaim" (
+  "id" TEXT NOT NULL,
+  "walletAddress" TEXT NOT NULL,
+  "network" "ChainNetwork" NOT NULL,
+  "amount" TEXT NOT NULL,
+  "txHash" TEXT,
+  "status" "FaucetClaimStatus" NOT NULL DEFAULT 'PENDING',
+  "failureReason" TEXT,
+  "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "fulfilledAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "FaucetClaim_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "FaucetClaim_walletAddress_network_idx"
+  ON "FaucetClaim"("walletAddress", "network");
+
+CREATE INDEX IF NOT EXISTS "FaucetClaim_status_requestedAt_idx"
+  ON "FaucetClaim"("status", "requestedAt");
+`;
+
 export async function validateFaucetAddress(address: string) {
   try {
     await ccc.Address.fromString(address, cccClient);
@@ -29,7 +64,12 @@ function faucetWalletCapUnits() {
   return BigInt(env.FAUCET_MAX_PER_WALLET) * 10n ** BigInt(env.CKB_TOKEN_DECIMALS);
 }
 
+async function ensureFaucetSchema() {
+  await db.$executeRawUnsafe(faucetSchemaSql);
+}
+
 export async function getFaucetWalletSummary(walletAddress: string) {
+  await ensureFaucetSchema();
   const normalized = await validateFaucetAddress(walletAddress);
   const claims = await db.faucetClaim.findMany({
     where: {
@@ -61,6 +101,7 @@ export async function claimFaucetTokens(walletAddress: string) {
     throw new Error("The faucet is not enabled right now");
   }
 
+  await ensureFaucetSchema();
   const summary = await getFaucetWalletSummary(walletAddress);
   const claimAmount = faucetClaimAmountUnits();
 
