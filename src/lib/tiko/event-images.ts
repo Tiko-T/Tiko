@@ -104,6 +104,10 @@ export function toServedEventImageSrc(imageSrc: string | null | undefined) {
     return `/api/event-images/${encodeURIComponent(fileName)}`;
   }
 
+  if (imageSrc.startsWith("events/")) {
+    return `/api/event-images/${encodeURIComponent(imageSrc)}`;
+  }
+
   return imageSrc;
 }
 
@@ -140,7 +144,11 @@ export async function saveUploadedEventImage(params: {
 }
 
 export async function fetchStoredEventImage(imageIdentifier: string) {
-  if (imageIdentifier.startsWith("http://") || imageIdentifier.startsWith("https://")) {
+  if (
+    imageIdentifier.startsWith("http://") ||
+    imageIdentifier.startsWith("https://") ||
+    imageIdentifier.startsWith("events/")
+  ) {
     const blob = await get(imageIdentifier, {
       access: "private",
       useCache: true,
