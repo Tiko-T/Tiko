@@ -95,9 +95,6 @@ function HeaderLogo() {
           <span className="truncate text-[2.05rem] font-semibold uppercase tracking-[0.18em] text-[color:#1d1b21] sm:text-[2.8rem] sm:tracking-[0.22em]">
             TIKO
           </span>
-          <span className="hidden rounded-full border border-[color:rgba(169,43,31,0.12)] bg-[color:rgba(207,79,64,0.1)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-strong)] sm:inline-flex">
-            Live
-          </span>
         </div>
         <p className="truncate text-[11px] font-medium uppercase tracking-[0.22em] text-[color:var(--muted)]">
           Events. Booking. Entry.
