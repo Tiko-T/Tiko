@@ -9,6 +9,7 @@ For the initial MVP, Tiko supports one whitelisted CKB payment token on testnet.
 - `product-spec.md`: product vision, scope, users, feature set, roadmap, and KPIs
 - `system-architecture.md`: platform architecture, components, data model, lifecycle, and security model
 - `user-journey-map.md`: merchant, buyer, and operator journeys across purchase, fulfillment, check-in, and wallet-based payment
+- `creator-commerce-offering.md`: clear product offering description covering what exists today and the next creator-commerce expansion
 
 ## Positioning
 
