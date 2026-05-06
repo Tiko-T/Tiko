@@ -62,13 +62,13 @@ export default async function Home() {
             <div className="space-y-8 text-white">
               <div className="space-y-4">
                 <p className="eyebrow animate-rise text-white/78">
-                  Events, booking, and entry in one place
+                  Ticketing and creator commerce in one place
                 </p>
                 <h1 className="animate-rise [animation-delay:120ms] font-[family:var(--font-display)] text-5xl leading-[0.88] sm:text-6xl lg:text-7xl">
-                  Create events, manage booking, and run entry from one place.
+                  Run ticketing, creator commerce, and event entry from one place.
                 </h1>
                 <p className="animate-rise max-w-2xl [animation-delay:220ms] text-base leading-8 text-white/88 sm:text-lg">
-                  Publish an event, open booking, and keep ticket access and check-in in sync.
+                  Publish events, sell creator-led experiences and digital offerings, and keep booking, ticket access, and check-in in sync.
                 </p>
               </div>
 
@@ -94,12 +94,12 @@ export default async function Home() {
                 <HeroMetric
                   label="Booking flow"
                   value="Simple"
-                  body="Event page, booking, and entry in one flow."
+                  body="Ticketing, checkout, and entry in one flow."
                 />
                 <HeroMetric
-                  label="Event-day entry"
-                  value="Ready"
-                  body="Event teams validate live tickets quickly at the door."
+                  label="Creator commerce"
+                  value="Built in"
+                  body="Sell access, drops, and event-led offers from the same platform."
                 />
               </div>
             </div>
@@ -120,8 +120,8 @@ export default async function Home() {
                 />
                 <HeroPanel
                   icon={<Users className="h-4 w-4" />}
-                  title="For event teams"
-                  body="Publish events, manage booking, and move guests through check-in."
+                  title="For creators and teams"
+                  body="Publish events, manage ticketing, and sell creator-led offers from one operating surface."
                 />
               </div>
             </aside>
@@ -170,8 +170,8 @@ export default async function Home() {
           />
           <AudienceCard
             eyebrow="Hosting?"
-            title="Run booking and entry together."
-            body="Publish paid or free events, issue active tickets, and validate guests at the venue from one system."
+            title="Run ticketing and creator commerce together."
+            body="Publish paid or free events, sell creator-led offers, issue active tickets, and validate guests from one system."
             icon={<ShieldCheck className="h-5 w-5" />}
             ctaHref="/sell"
             ctaLabel="List an event"

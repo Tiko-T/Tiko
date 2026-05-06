@@ -135,9 +135,18 @@ export const checkInResultViewSchema = z.object({
   buyerEmail: z.string().email(),
 });
 
+export const faucetViewSchema = z.object({
+  walletAddress: z.string(),
+  claimAmountDisplay: z.string(),
+  maxPerWalletDisplay: z.string(),
+  remainingAmountDisplay: z.string(),
+  txHash: z.string().nullable(),
+});
+
 export type CatalogProductView = z.infer<typeof catalogProductViewSchema>;
 export type OrderView = z.infer<typeof orderViewSchema>;
 export type CheckInResultView = z.infer<typeof checkInResultViewSchema>;
+export type FaucetView = z.infer<typeof faucetViewSchema>;
 
 export function orderNeedsTxHash(order: OrderView) {
   return order.actions.canSubmitTxHash;

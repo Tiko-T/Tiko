@@ -1,9 +1,11 @@
 import {
   catalogProductViewSchema,
   checkInResultViewSchema,
+  faucetViewSchema,
   orderViewSchema,
   type CatalogProductView,
   type CheckInResultView,
+  type FaucetView,
   type OrderView,
 } from "./contracts";
 
@@ -128,5 +130,13 @@ export const tikoApi = {
         accessCode,
       }),
     }) as Promise<CheckInResultView>;
+  },
+  claimFaucet(walletAddress: string) {
+    return requestData("/api/faucet", faucetViewSchema, {
+      method: "POST",
+      body: JSON.stringify({
+        walletAddress,
+      }),
+    }) as Promise<FaucetView>;
   },
 };

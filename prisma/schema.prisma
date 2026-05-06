@@ -75,6 +75,12 @@ enum BackgroundJobStatus {
   FAILED
 }
 
+enum FaucetClaimStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 model Merchant {
   id                String   @id @default(cuid())
   slug              String   @unique
@@ -336,4 +342,21 @@ model BackgroundJob {
 
   @@index([status, runAfter])
   @@index([type, status])
+}
+
+model FaucetClaim {
+  id              String            @id @default(cuid())
+  walletAddress   String
+  network         ChainNetwork
+  amount          String
+  txHash          String?
+  status          FaucetClaimStatus @default(PENDING)
+  failureReason   String?
+  requestedAt     DateTime          @default(now())
+  fulfilledAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([walletAddress, network])
+  @@index([status, requestedAt])
 }
